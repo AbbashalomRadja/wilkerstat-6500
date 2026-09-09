@@ -1820,9 +1820,39 @@
       var searchBox = document.getElementById('searchBox');
       var searchResults = document.getElementById('searchResults');
       var searchIndex = [];
-      kabkotData.features.forEach(function (f) { searchIndex.push({ level: 'kabkot', props: f.properties, name: f.properties.nmkab }); });
+      // Kaltara hanya punya satu Kota (Tarakan), sisanya Kabupaten.
+      // Data sumber tidak menyimpan status "kabupaten/kota" atau "desa/kelurahan"
+      // secara eksplisit, jadi status ditentukan dari nama kab/kota tersebut.
+      function isKotaKab(nmkab) { return nmkab === 'TARAKAN'; }
+
+      kabkotData.features.forEach(function (f) {
+        searchIndex.push({
+          level: 'kabkot',
+          subtype: isKotaKab(f.properties.nmkab) ? 'kota' : 'kabupaten',
+          props: f.properties,
+          name: f.properties.nmkab
+        });
+      });
       kecamatanData.features.forEach(function (f) { searchIndex.push({ level: 'kec', props: f.properties, name: f.properties.nmkec }); });
-      desaData.features.forEach(function (f) { searchIndex.push({ level: 'desa', props: f.properties, name: f.properties.nmdesa }); });
+      desaData.features.forEach(function (f) {
+        searchIndex.push({
+          level: 'desa',
+          subtype: isKotaKab(f.properties.nmkab) ? 'kelurahan' : 'desa',
+          props: f.properties,
+          name: f.properties.nmdesa
+        });
+      });
+
+      // Kata kunci jenis wilayah -> filter berdasarkan tipe, bukan nama
+      var typeKeywords = {
+        'desa': function (it) { return it.level === 'desa' && it.subtype === 'desa'; },
+        'kelurahan': function (it) { return it.level === 'desa' && it.subtype === 'kelurahan'; },
+        'kab': function (it) { return it.level === 'kabkot' && it.subtype === 'kabupaten'; },
+        'kabupaten': function (it) { return it.level === 'kabkot' && it.subtype === 'kabupaten'; },
+        'kota': function (it) { return it.level === 'kabkot' && it.subtype === 'kota'; },
+        'kec': function (it) { return it.level === 'kec'; },
+        'kecamatan': function (it) { return it.level === 'kec'; }
+      };
 
       var searchDebounceTimer = null;
       searchBox.addEventListener('input', function () {
@@ -1830,9 +1860,13 @@
         searchDebounceTimer = setTimeout(runSearch, 180);
       });
       function runSearch() {
-        var q = searchBox.value.trim().toUpperCase();
+        var qRaw = searchBox.value.trim();
+        var q = qRaw.toUpperCase();
         if (q.length < 2) { searchResults.style.display = 'none'; searchResults.innerHTML = ''; return; }
-        var matches = searchIndex.filter(function (it) { return it.name.indexOf(q) !== -1; }).slice(0, 30);
+        var typeFilter = typeKeywords[qRaw.toLowerCase()];
+        var matches = typeFilter
+          ? searchIndex.filter(typeFilter).sort(function (a, b) { return a.name.localeCompare(b.name); }).slice(0, 300)
+          : searchIndex.filter(function (it) { return it.name.indexOf(q) !== -1; }).slice(0, 30);
         if (!matches.length) { searchResults.innerHTML = '<div style="padding:10px 12px;color:#7A8699;">Tidak ditemukan wilayah dengan nama tersebut.</div>'; searchResults.style.display = 'block'; return; }
         searchResults.innerHTML = matches.map(function (it, idx) {
           var sub = it.level === 'kabkot' ? it.props.nmprov : (it.level === 'kec' ? it.props.nmkab + ' • ' + it.props.nmprov : it.props.nmkec + ', ' + it.props.nmkab);
