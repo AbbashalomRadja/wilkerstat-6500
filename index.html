@@ -1819,17 +1819,7 @@
         if (activeFilter.kddesa) return 'sls';
         if (activeFilter.kdkec) return 'desa';
         if (activeFilter.kdkab) return 'kec';
-        return null; // belum ada filter dropdown/pencarian -> lihat status zoom (zoomLabelLevel)
-      }
-
-      // Saat user cuma browsing bebas (scroll zoom) tanpa pakai dropdown/pencarian,
-      // level label mengikuti ambang auto-zoom desa saja. SLS sengaja TIDAK
-      // dimasukkan di sini karena datanya berat (~6MB) — label SLS baru muncul
-      // kalau memang difilter eksplisit sampai level desa (lihat labelLevelForFilter).
-      function zoomLabelLevel() {
-        var z = map.getZoom();
-        if (z >= DESA_AUTO_ZOOM) return 'desa';
-        return null;
+        return null; // belum ada filter dropdown/pencarian -> tidak ada label
       }
 
       function labelText(p, level) {
@@ -1854,22 +1844,20 @@
         layerGroup.eachLayer(function (l) { if (l.getTooltip()) l.unbindTooltip(); });
       }
 
-      // Satu fungsi terpusat untuk label, dipanggil baik saat filter dropdown/pencarian
-      // berubah, MAUPUN saat user cuma zoom manual (moveend/zoomend).
-      // - Kalau ada filter aktif (dari dropdown/pencarian): label dipasang ke SEMUA
-      //   fitur yang sedang match filter itu (jumlahnya sudah otomatis sedikit).
-      // - Kalau tidak ada filter (browsing bebas): label dipasang cuma untuk fitur
-      //   yang KELIHATAN DI LAYAR saat ini saja, supaya tidak numpuk/berat.
+      // Label SEKARANG murni mengikuti filter dropdown/pencarian saja (TIDAK lagi
+      // dipicu oleh zoom/geser bebas). Alasannya: waktu label dikaitkan ke
+      // zoom/pan, hasilnya kadang muncul kadang tidak (event zoom/move yang
+      // beruntun bikin hitung ulang ratusan fitur berkali-kali dalam waktu
+      // singkat) dan lumayan berat. Dengan diikat ke filter saja, label cuma
+      // dihitung sekali tiap kali filter benar-benar berubah — stabil & ringan.
       function refreshLabels() {
-        var filterLevel = labelLevelForFilter();
-        var level = filterLevel || zoomLabelLevel();
-        var viewportOnly = !filterLevel;
+        var level = labelLevelForFilter();
 
         // Saat ada filter aktif, pastikan layer anak diaktifkan supaya label bisa muncul
         // (sesuai permintaan mentor: filter kecamatan -> label desa; filter desa -> label SLS)
-        if (filterLevel === 'desa') forceLayerOn('desa');
-        if (filterLevel === 'sls') forceLayerOn('sls');
-        if (filterLevel === 'kec') forceLayerOn('kec');
+        if (level === 'desa') forceLayerOn('desa');
+        if (level === 'sls') forceLayerOn('sls');
+        if (level === 'kec') forceLayerOn('kec');
 
         clearLabelsOnLayer(kabkotLayer);
         clearLabelsOnLayer(kecLayer);
@@ -1878,10 +1866,8 @@
 
         if (!level) return;
 
-        var bounds = viewportOnly ? map.getBounds() : null;
         function maybeLabel(l, lvl) {
           if (l.options.opacity === 0) return; // sedang disembunyikan oleh filter
-          if (bounds && !bounds.intersects(l.getBounds())) return; // di luar layar -> skip
           setFeatureLabel(l, lvl, true);
         }
 
@@ -1997,11 +1983,9 @@
       map.on('zoomend', function () {
         if (desaManualOverride === null) applyDesaVisibility();
         maybeAutoLoadSls();
-        refreshLabels();
       });
       map.on('moveend', function () {
         maybeAutoLoadSls();
-        refreshLabels();
       });
       applyDesaVisibility();
 
