@@ -961,6 +961,30 @@
         </div>
 
         <div class="block">
+          <h2>Label Nama Wilayah</h2>
+          <div class="layer-row">
+            <span class="swatch" style="background:transparent;border:1px dashed var(--kab)"></span>
+            <span class="lname">Label Kab/Kota</span>
+            <label class="switch"><input type="checkbox" id="toggleKabkotLabel"><span class="slider"></span></label>
+          </div>
+          <div class="layer-row">
+            <span class="swatch" style="background:transparent;border:1px dashed var(--kec)"></span>
+            <span class="lname">Label Kecamatan</span>
+            <label class="switch"><input type="checkbox" id="toggleKecLabel"><span class="slider"></span></label>
+          </div>
+          <div class="layer-row">
+            <span class="swatch" style="background:transparent;border:1px dashed var(--desa-line)"></span>
+            <span class="lname">Label Desa/Kelurahan</span>
+            <label class="switch"><input type="checkbox" id="toggleDesaLabel"><span class="slider"></span></label>
+          </div>
+          <div class="layer-row">
+            <span class="swatch" style="background:transparent;border:1px dashed var(--sls)"></span>
+            <span class="lname">Label SLS</span>
+            <label class="switch" title="Nama+kode SLS lumayan berat, aktifkan hanya saat perlu"><input type="checkbox" id="toggleSlsLabel"><span class="slider"></span></label>
+          </div>
+        </div>
+
+        <div class="block">
           <h2>Basemap</h2>
           <div class="basemap-row">
             <button class="bm-btn active" data-bm="sat">Satelit</button>
@@ -1738,7 +1762,9 @@
 
       function bindPopup(level) {
         return function (feature, layer) {
-          layer.bindPopup(popupHtml(feature.properties, level));
+          // Sengaja TIDAK pakai layer.bindPopup() -- info wilayah cukup lewat
+          // panel "Wilayah Terpilih" di sidebar (infoPanelHtml), popup mengambang
+          // di peta dihapus atas permintaan revisi supaya tidak dobel & bersih.
           layer.on('mouseover', function () { layer.setStyle({ weight: (level === 'kabkot' || level === 'kec' ? 4 : 2.5), opacity: 1 }); });
           layer.on('mouseout', function () {
             if (level === 'kabkot') layer.setStyle({ weight: 3, opacity: 1 });
@@ -1811,17 +1837,6 @@
       // di SEMUA layer (kabkot/kec/desa/sls) sesuai revisi dari mentor.
       var activeFilter = { kdkab: null, kdkec: null, kddesa: null };
 
-      // Level yang di-highlight sekarang -> tentukan level ANAK-nya yang perlu diberi label
-      // (sesuai permintaan mentor): difilter sampai desa -> label SLS; difilter sampai
-      // kecamatan -> label desa; difilter sampai kabupaten -> label kecamatan;
-      // tidak ada filter sama sekali -> label kabupaten (level teratas).
-      function labelLevelForFilter() {
-        if (activeFilter.kddesa) return 'sls';
-        if (activeFilter.kdkec) return 'desa';
-        if (activeFilter.kdkab) return 'kec';
-        return null; // belum ada filter dropdown/pencarian -> tidak ada label
-      }
-
       function labelText(p, level) {
         var nama = level === 'kabkot' ? p.nmkab : level === 'kec' ? p.nmkec : level === 'desa' ? p.nmdesa : p.nmsls;
         var kode = level === 'kabkot' ? p.kdkab : level === 'kec' ? p.kdkec : level === 'desa' ? p.kddesa : p.kdsls;
@@ -1844,36 +1859,102 @@
         layerGroup.eachLayer(function (l) { if (l.getTooltip()) l.unbindTooltip(); });
       }
 
-      // Label SEKARANG murni mengikuti filter dropdown/pencarian saja (TIDAK lagi
-      // dipicu oleh zoom/geser bebas). Alasannya: waktu label dikaitkan ke
-      // zoom/pan, hasilnya kadang muncul kadang tidak (event zoom/move yang
-      // beruntun bikin hitung ulang ratusan fitur berkali-kali dalam waktu
-      // singkat) dan lumayan berat. Dengan diikat ke filter saja, label cuma
-      // dihitung sekali tiap kali filter benar-benar berubah — stabil & ringan.
+      // Label sekarang INDEPENDEN per level lewat toggle sendiri-sendiri di
+      // sidebar ("Label Nama Wilayah") -- TIDAK lagi wajib nunggu filter
+      // di-drill-down dulu. Nyalakan toggle -> label muncul untuk wilayah
+      // level itu yang SEDANG KELIHATAN (mengikuti filter/toggle layer yang
+      // sudah aktif, kalau ada), tanpa perlu pilih dropdown sampai dalam.
+      // Cuma dihitung ulang saat togglenya sendiri diubah atau filter berubah
+      // (BUKAN tiap zoom/geser), supaya tetap stabil & ringan.
+      var labelEnabled = { kabkot: false, kec: false, desa: false, sls: false };
+
+      // Ambang zoom minimum per level supaya label tidak dipaksa nongol untuk
+      // ratusan wilayah sekaligus saat peta masih zoom jauh (mis. toggle layer
+      // dipaksa aktif manual walau belum di-zoom). Nilainya selaras dengan
+      // DESA_AUTO_ZOOM/SLS_AUTO_ZOOM di atas.
+      var LABEL_MIN_ZOOM = { kabkot: 5, kec: 8, desa: 11, sls: 13 };
+
       function refreshLabels() {
-        var level = labelLevelForFilter();
-
-        // Saat ada filter aktif, pastikan layer anak diaktifkan supaya label bisa muncul
-        // (sesuai permintaan mentor: filter kecamatan -> label desa; filter desa -> label SLS)
-        if (level === 'desa') forceLayerOn('desa');
-        if (level === 'sls') forceLayerOn('sls');
-        if (level === 'kec') forceLayerOn('kec');
-
         clearLabelsOnLayer(kabkotLayer);
         clearLabelsOnLayer(kecLayer);
         clearLabelsOnLayer(desaLayer);
         slsLayer.eachLayer(function (sub) { clearLabelsOnLayer(sub); });
 
-        if (!level) return;
+        var zoom = map.getZoom();
+        // Beri sedikit padding supaya label di tepi layar tidak "berkedip"
+        // hilang-muncul pas baru sedikit di luar viewport.
+        var viewBounds = map.getBounds().pad(0.15);
 
         function maybeLabel(l, lvl) {
-          if (l.options.opacity === 0) return; // sedang disembunyikan oleh filter
+          if (l.options.opacity === 0) return; // sedang disembunyikan oleh filter -> jangan dilabel
+          if (zoom < LABEL_MIN_ZOOM[lvl]) return; // masih terlalu jauh -> jangan numpuk banyak label sekaligus
+          // Ini yang memperbaiki "berat kalau munculin label di kota besar (mis.
+          // Tanjung Selor)": sebelumnya SEMUA wilayah level itu yang sedang
+          // dimuat (satu kabupaten penuh untuk SLS, satu provinsi untuk
+          // kec/desa) langsung dikasih tooltip permanen sekaligus, walau
+          // sebagian besar ada di luar layar. Sekarang cuma yang kelihatan
+          // (atau dekat tepi layar) yang di-label.
+          if (!viewBounds.intersects(l.getBounds())) return;
           setFeatureLabel(l, lvl, true);
         }
 
-        if (level === 'kec') kecLayer.eachLayer(function (l) { maybeLabel(l, 'kec'); });
-        else if (level === 'desa') desaLayer.eachLayer(function (l) { maybeLabel(l, 'desa'); });
-        else if (level === 'sls') slsLayer.eachLayer(function (sub) { sub.eachLayer(function (l) { maybeLabel(l, 'sls'); }); });
+        if (labelEnabled.kabkot) kabkotLayer.eachLayer(function (l) { maybeLabel(l, 'kabkot'); });
+        if (labelEnabled.kec) kecLayer.eachLayer(function (l) { maybeLabel(l, 'kec'); });
+        if (labelEnabled.desa) desaLayer.eachLayer(function (l) { maybeLabel(l, 'desa'); });
+        if (labelEnabled.sls) slsLayer.eachLayer(function (sub) { sub.eachLayer(function (l) { maybeLabel(l, 'sls'); }); });
+      }
+
+      // Label dihitung ulang juga saat user selesai geser/zoom peta (di-debounce
+      // biar tidak dipanggil berkali-kali di tengah gesture), tapi HANYA kalau
+      // ada toggle label yang sedang aktif -- supaya tidak ada kerja ekstra
+      // kalau tidak ada label yang ditampilkan sama sekali.
+      var labelRefreshTimer = null;
+      function scheduleLabelRefresh() {
+        var anyLabelOn = labelEnabled.kabkot || labelEnabled.kec || labelEnabled.desa || labelEnabled.sls;
+        if (!anyLabelOn) return;
+        clearTimeout(labelRefreshTimer);
+        labelRefreshTimer = setTimeout(refreshLabels, 150);
+      }
+
+      function wireLabelToggle(toggleId, level) {
+        document.getElementById(toggleId).addEventListener('change', function (e) {
+          labelEnabled[level] = e.target.checked;
+          if (labelEnabled[level]) forceLayerOn(level); // nyalain label -> pastikan layer-nya juga tampil
+          if (level === 'sls' && labelEnabled.sls) {
+            // Pastikan data SLS kecamatan yang relevan sudah ke-fetch dulu.
+            ensureSlsLoadedForCurrentView().then(function () { refreshSlsLayerMembership(); refreshLabels(); });
+            return;
+          }
+          refreshLabels();
+        });
+      }
+      wireLabelToggle('toggleKabkotLabel', 'kabkot');
+      wireLabelToggle('toggleKecLabel', 'kec');
+      wireLabelToggle('toggleDesaLabel', 'desa');
+      wireLabelToggle('toggleSlsLabel', 'sls');
+
+      // Update angka jumlah wilayah di panel "Layer Batas Wilayah" supaya ikut
+      // menyempit sesuai filter yang aktif (contoh: pilih Kab Malinau -> jumlah
+      // kecamatan/desa/SLS yang ditampilkan ikut jadi jumlah punya Malinau saja).
+      function updateLayerCounts() {
+        var kecCount = kecamatanData.features.filter(function (f) {
+          return !activeFilter.kdkab || f.properties.kdkab === activeFilter.kdkab;
+        }).length;
+        var desaCount = desaData.features.filter(function (f) {
+          var p = f.properties;
+          return (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
+                 (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec);
+        }).length;
+        var slsList = typeof slsMeta !== 'undefined' ? slsMeta : [];
+        var slsCount = slsList.filter(function (p) {
+          return (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
+                 (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
+                 (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
+        }).length;
+        document.getElementById('cnt-kabkot').textContent = activeFilter.kdkab ? 1 : kabkotData.features.length;
+        document.getElementById('cnt-kec').textContent = kecCount;
+        document.getElementById('cnt-desa').textContent = desaCount;
+        document.getElementById('cnt-sls').textContent = slsCount;
       }
 
       function applyFilterVisibility() {
@@ -1895,72 +1976,102 @@
           setFeatureVisible(l, 'desa', show);
         });
         refreshSlsLayerMembership();
+        // Kalau sedang difilter sampai desa (SLS relevan) dan datanya belum ke-fetch, muat sekarang.
+        // Ini yang memperbaiki "beberapa daerah SLS-nya tidak muncul" -- sebelumnya SLS cuma
+        // ke-fetch kalau user zoom manual atau pilih SLS spesifik, TIDAK saat baru pilih desa.
+        if (activeFilter.kddesa && activeFilter.kdkab && activeFilter.kdkec) {
+          loadSlsForKec(activeFilter.kdkab, activeFilter.kdkec).then(function () { refreshSlsLayerMembership(); refreshLabels(); updateLayerCounts(); });
+        }
         refreshLabels();
+        updateLayerCounts();
         updateResetBtnVisibility();
       }
 
-      /* ---------------- SLS: layer lazy-load per kabupaten ---------------- */
+      /* ---------------- SLS: layer lazy-load per KECAMATAN ---------------- */
       // Data geometri SLS berat (±6 MB total) sehingga TIDAK di-embed di HTML.
-      // Hanya dimuat (fetch) per kabupaten saat benar-benar dibutuhkan:
-      // toggle layer manual, pilih dropdown, klik hasil pencarian, GPS, atau zoom sangat dekat.
+      // Dipecah per KECAMATAN (bukan per kabupaten) supaya sekali fetch jauh
+      // lebih ringan -- maksimal ratusan polygon per kecamatan, dibanding bisa
+      // sampai ~1.200 polygon kalau per kabupaten.
       var slsLayer = L.layerGroup();     // wadah SLS yang SEDANG ditampilkan (bisa dikosongkan/diisi ulang)
-      var slsRawData = {};               // kdkab -> { type, features:[...] } (mentah, untuk point-in-polygon)
-      var slsGeoLayers = {};             // kdkab -> L.geoJSON layer (cache, tetap disimpan walau lagi disembunyikan)
-      var slsLoading = {};               // kdkab -> Promise (mencegah fetch dobel)
+      var slsRawData = {};               // "kdkab_kdkec" -> { type, features:[...] } (mentah, utk point-in-polygon)
+      var slsGeoLayers = {};             // "kdkab_kdkec" -> L.geoJSON layer (cache)
+      var slsLoading = {};               // "kdkab_kdkec" -> Promise (mencegah fetch dobel)
       var slsManualOverride = null;      // null = ikut auto-zoom; true/false = dipaksa lewat toggle
       var SLS_AUTO_ZOOM = 13;
 
-      function slsFilePath(kdkab) { return 'data/sls_' + kdkab + '.geojson'; }
+      // SLS bisa sampai ratusan polygon dalam satu kecamatan. Digambar lewat SVG
+      // (default Leaflet) itu berat karena tiap polygon jadi elemen DOM sendiri.
+      // Canvas renderer menggambar semuanya ke satu <canvas>, jauh lebih ringan.
+      var slsRenderer = L.canvas({ padding: 0.5 });
 
-      function loadSlsForKab(kdkab) {
-        if (!kdkab) return Promise.resolve(null);
-        if (slsGeoLayers[kdkab]) return Promise.resolve(slsGeoLayers[kdkab]);
-        if (slsLoading[kdkab]) return slsLoading[kdkab];
-        slsLoading[kdkab] = fetch(slsFilePath(kdkab))
+      function slsKey(kdkab, kdkec) { return kdkab + '_' + kdkec; }
+      function slsFilePath(kdkab, kdkec) { return 'data/sls/' + kdkab + '/' + kdkec + '.geojson'; }
+
+      function loadSlsForKec(kdkab, kdkec) {
+        if (!kdkab || !kdkec) return Promise.resolve(null);
+        var key = slsKey(kdkab, kdkec);
+        if (slsGeoLayers[key]) return Promise.resolve(slsGeoLayers[key]);
+        if (slsLoading[key]) return slsLoading[key];
+        slsLoading[key] = fetch(slsFilePath(kdkab, kdkec))
           .then(function (res) {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
           })
           .then(function (geojson) {
-            slsRawData[kdkab] = geojson;
+            slsRawData[key] = geojson;
             var glayer = L.geoJSON(geojson, {
+              renderer: slsRenderer,
               style: function () { return BASE_STYLE.sls; },
               onEachFeature: bindPopup('sls')
             });
-            slsGeoLayers[kdkab] = glayer;
-            refreshSlsLayerMembership(); // langsung terapkan filter kec/desa yang sedang aktif (kalau ada)
+            slsGeoLayers[key] = glayer;
+            refreshSlsLayerMembership(); // langsung terapkan filter desa yang sedang aktif (kalau ada)
             refreshLabels();
             kabkotLayer.bringToFront();
             return glayer;
           })
           .catch(function (err) {
-            console.warn('Gagal memuat data SLS kab ' + kdkab + ':', err);
+            console.warn('Gagal memuat data SLS kec ' + key + ':', err);
             showToast('Gagal memuat data SLS untuk wilayah ini.', 'error', 4000);
-            delete slsLoading[kdkab];
+            delete slsLoading[key];
             return null;
           });
-        return slsLoading[kdkab];
+        return slsLoading[key];
       }
 
-      // Tentukan kabupaten mana yang SLS-nya harus tampil, lalu isi ulang slsLayer
-      // hanya dengan kabupaten itu (mencegah SLS kabupaten lain ikut menumpuk saat
-      // user pindah-pindah lokasi/zoom — ini akar masalah "polygon tidak mengikuti filter").
+      // Tentukan (kabupaten, kecamatan) mana yang SLS-nya relevan sekarang:
+      // ikuti filter kalau sudah sampai level kecamatan; kalau belum, ikuti
+      // kecamatan yang sedang ada di tengah layar (dibatasi ke kabupaten
+      // filter kalau ada filter kabupaten tapi belum filter kecamatan).
+      function currentSlsTarget() {
+        if (activeFilter.kdkab && activeFilter.kdkec) {
+          return { kdkab: activeFilter.kdkab, kdkec: activeFilter.kdkec };
+        }
+        var c = map.getCenter();
+        var kec = findKecByCoords(c.lat, c.lng);
+        if (!kec) return null;
+        if (activeFilter.kdkab && kec.properties.kdkab !== activeFilter.kdkab) return null;
+        return { kdkab: kec.properties.kdkab, kdkec: kec.properties.kdkec };
+      }
+
+      function ensureSlsLoadedForCurrentView() {
+        var target = currentSlsTarget();
+        if (!target) return Promise.resolve(null);
+        return loadSlsForKec(target.kdkab, target.kdkec);
+      }
+
+      // Isi ulang slsLayer hanya dengan SATU kecamatan yang relevan (mencegah
+      // SLS kecamatan lain ikut menumpuk saat user pindah-pindah lokasi/zoom —
+      // ini akar masalah lama "polygon tidak mengikuti filter").
       function refreshSlsLayerMembership() {
         slsLayer.clearLayers();
-        var targetKab = activeFilter.kdkab;
-        if (!targetKab) {
-          // Tidak ada filter kabupaten eksplisit -> ikuti kabupaten yang sedang
-          // ada di tengah layar (satu kabupaten pada satu waktu, tidak ditumpuk).
-          var c = map.getCenter();
-          var kb = findKabByCoords(c.lat, c.lng);
-          targetKab = kb ? kb.properties.kdkab : null;
-        }
-        if (!targetKab || !slsGeoLayers[targetKab]) return;
-        var glayer = slsGeoLayers[targetKab];
+        var target = currentSlsTarget();
+        if (!target) return;
+        var glayer = slsGeoLayers[slsKey(target.kdkab, target.kdkec)];
+        if (!glayer) return;
         glayer.eachLayer(function (l) {
           var p = l.feature.properties;
-          var show = (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
-                     (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
+          var show = !activeFilter.kddesa || p.kddesa === activeFilter.kddesa;
           setFeatureVisible(l, 'sls', show);
         });
         slsLayer.addLayer(glayer);
@@ -1983,9 +2094,11 @@
       map.on('zoomend', function () {
         if (desaManualOverride === null) applyDesaVisibility();
         maybeAutoLoadSls();
+        scheduleLabelRefresh();
       });
       map.on('moveend', function () {
         maybeAutoLoadSls();
+        scheduleLabelRefresh();
       });
       applyDesaVisibility();
 
@@ -2002,14 +2115,7 @@
         var shouldShow = slsManualOverride !== null ? slsManualOverride : (map.getZoom() >= SLS_AUTO_ZOOM);
         applySlsVisibility();
         if (!shouldShow) return;
-        // Kabupaten mana yang dimuat mengikuti filter kalau ada, atau posisi tengah layar kalau tidak ada.
-        var kdkab = activeFilter.kdkab;
-        if (!kdkab) {
-          var c = map.getCenter();
-          var kb = findKabByCoords(c.lat, c.lng);
-          kdkab = kb ? kb.properties.kdkab : null;
-        }
-        if (kdkab) loadSlsForKab(kdkab).then(function () { refreshSlsLayerMembership(); refreshLabels(); });
+        ensureSlsLoadedForCurrentView().then(function () { refreshSlsLayerMembership(); refreshLabels(); });
       }
 
       function findKabByCoords(lat, lng) {
@@ -2017,6 +2123,15 @@
         for (var m = 0; m < kabkotData.features.length; m++) {
           var kb = kabkotData.features[m];
           if (pointInGeoJSON(pt, kb.geometry)) return kb;
+        }
+        return null;
+      }
+
+      function findKecByCoords(lat, lng) {
+        var pt = [lat, lng];
+        for (var m = 0; m < kecamatanData.features.length; m++) {
+          var k = kecamatanData.features[m];
+          if (pointInGeoJSON(pt, k.geometry)) return k;
         }
         return null;
       }
@@ -2040,13 +2155,7 @@
         slsManualOverride = e.target.checked;
         if (e.target.checked) {
           slsLayer.addTo(map);
-          var kdkab = activeFilter.kdkab;
-          if (!kdkab) {
-            var c = map.getCenter();
-            var kb = findKabByCoords(c.lat, c.lng);
-            kdkab = kb ? kb.properties.kdkab : null;
-          }
-          if (kdkab) loadSlsForKab(kdkab).then(refreshSlsLayerMembership);
+          ensureSlsLoadedForCurrentView().then(function () { refreshSlsLayerMembership(); });
         } else {
           map.removeLayer(slsLayer);
         }
@@ -2143,7 +2252,6 @@
         forceLayerOn(level);
         var group = (allLayers && allLayers.length > 1) ? L.featureGroup(allLayers) : layer;
         map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: level === 'sls' ? 15 : (level === 'desa' ? 13 : (level === 'kec' ? 11 : 9)) });
-        layer.openPopup();
         var infoPanel = document.getElementById('infoPanel');
         infoPanel.classList.remove('empty');
         infoPanel.innerHTML = infoPanelHtml(props, level);
@@ -2196,9 +2304,9 @@
       resetFilterBtn.addEventListener('click', resetAllFilters);
 
       // Cari SLS berdasarkan properti (bisa terdiri dari beberapa bagian/polygon
-      // terpisah dengan kode sama): pastikan geometri kabupatennya sudah di-fetch dulu.
-      function findSlsLayerAndOpen(kdkab, matchFn, props) {
-        loadSlsForKab(kdkab).then(function (glayer) {
+      // terpisah dengan kode sama): pastikan geometri kecamatannya sudah di-fetch dulu.
+      function findSlsLayerAndOpen(kdkab, kdkec, matchFn, props) {
+        loadSlsForKec(kdkab, kdkec).then(function (glayer) {
           if (!glayer) return;
           refreshSlsLayerMembership();
           var matches = layersByKode(glayer, matchFn);
@@ -2273,7 +2381,7 @@
         var props = (typeof slsMeta !== 'undefined' ? slsMeta : []).find(function (p) {
           return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls;
         });
-        findSlsLayerAndOpen(kdkab, function (p) {
+        findSlsLayerAndOpen(kdkab, kdkec, function (p) {
           return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls;
         }, props);
       });
@@ -2389,7 +2497,7 @@
               selSls.value = p.kdsls;
               activeFilter.kdkab = p.kdkab; activeFilter.kdkec = p.kdkec; activeFilter.kddesa = p.kddesa;
               applyFilterVisibility();
-              findSlsLayerAndOpen(p.kdkab, function (pp) {
+              findSlsLayerAndOpen(p.kdkab, p.kdkec, function (pp) {
                 return pp === p || (pp.kdkab === p.kdkab && pp.kdkec === p.kdkec && pp.kddesa === p.kddesa && pp.kdsls === p.kdsls);
               }, p);
             }
@@ -2581,10 +2689,10 @@
           region = findWilayahByCoords(lat, lng);
           lastRegionResult = region;
           lastRegionLookupTime = now;
-          // Muat data SLS kabupaten user saat ini secara diam-diam, supaya fix GPS berikutnya
+          // Muat data SLS kecamatan user saat ini secara diam-diam, supaya fix GPS berikutnya
           // bisa mendeteksi sampai level SLS juga.
-          var kbHere = findKabByCoords(lat, lng);
-          if (kbHere) loadSlsForKab(kbHere.properties.kdkab);
+          var kecHere = findKecByCoords(lat, lng);
+          if (kecHere) loadSlsForKec(kecHere.properties.kdkab, kecHere.properties.kdkec);
         } else {
           region = lastRegionResult;
         }
