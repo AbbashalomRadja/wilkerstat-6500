@@ -552,20 +552,20 @@
     /* ---------- GPS Floating Control & Marker ---------- */
     .gps-btn-wrap {
       position: absolute;
-      right: 14px;
-      bottom: 94px;
+      right: 10px;
+      bottom: 92px;
       z-index: 1000;
       display: flex;
       align-items: center;
     }
 
     #gpsBtn {
-      width: 42px;
-      height: 42px;
+      width: 30px;
+      height: 30px;
       background: #ffffff;
       border: none;
-      border-radius: 10px;
-      box-shadow: var(--shadow);
+      border-radius: 4px;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, .4);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -576,10 +576,14 @@
       padding: 0;
     }
 
+    #gpsBtn svg {
+      width: 16px;
+      height: 16px;
+    }
+
     #gpsBtn:hover {
-      background: #F0F4F8;
+      background: #F4F4F4;
       color: var(--blue);
-      transform: translateY(-1px);
     }
 
     #gpsBtn.locating {
@@ -602,10 +606,10 @@
 
     #gpsBtn .gps-live-dot {
       position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 8px;
-      height: 8px;
+      top: 2px;
+      right: 2px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: #20C997;
       border: 2px solid #fff;
@@ -1674,11 +1678,12 @@
       var basemaps = {
         sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 19,
+          maxNativeZoom: 17,
           attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
         }),
         hybrid: L.layerGroup([
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, maxNativeZoom: 17 }),
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, maxNativeZoom: 17 })
         ]),
         osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           subdomains: ['a', 'b', 'c'],
