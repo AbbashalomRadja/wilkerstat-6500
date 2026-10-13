@@ -7,15 +7,21 @@
   <meta name="description" content="Peta interaktif wilayah kerja statistik (Wilkerstat) BPS Provinsi Kalimantan Utara: batas kabupaten/kota, kecamatan, desa/kelurahan, hingga SLS (RT/RW/Dusun)." />
   <meta name="theme-color" content="#0B2545" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
-  <link rel="preconnect" href="https://server.arcgisonline.com" />
+  <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin />
   <title>WILKERSTAT 6500 &mdash; Kalimantan Utara</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Leaflet CSS: preload (non-blocking) + swap to stylesheet on load -->
+  <link rel="preload" as="style" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" /></noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
   <style>
+    /* Critical Leaflet CSS inlined to prevent FOUC while leaflet.css loads async */
+    .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden;-ms-touch-action:none;touch-action:none;font-family:inherit;font-size:.75rem;line-height:1.5}.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:visible}.leaflet-zoom-animated{-webkit-transform-origin:0 0;transform-origin:0 0}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-control-attribution{background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution a{text-decoration:none}
     @font-face { font-family: 'Inter Fallback'; src: local('Arial'); size-adjust: 107.4%; ascent-override: 90.2%; descent-override: 22.5%; line-gap-override: 0%; }
     @font-face { font-family: 'JetBrains Mono Fallback'; src: local('Courier New'); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
     :root {
@@ -63,6 +69,8 @@
       flex-direction: column;
       z-index: 1200;
       transition: margin-left .25s ease;
+      will-change: margin-left;
+      contain: layout style;
     }
 
     #sidebar.collapsed {
@@ -124,6 +132,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 18px 22px 28px;
+      min-height: 0;
     }
 
     .scroll::-webkit-scrollbar {
@@ -266,7 +275,7 @@
       background: #D6DCE4;
       border-radius: 20px;
       cursor: pointer;
-      transition: .2s;
+      transition: background-color .2s ease;
     }
 
     .slider:before {
@@ -278,7 +287,8 @@
       top: 2.5px;
       background: #fff;
       border-radius: 50%;
-      transition: .2s;
+      transition: transform .2s ease;
+      will-change: transform;
     }
 
     input:checked+.slider {
@@ -305,7 +315,7 @@
       cursor: pointer;
       color: #5B6675;
       text-align: center;
-      transition: .15s;
+      transition: border-color .15s ease, background-color .15s ease, color .15s ease;
     }
 
     .bm-btn.active {
@@ -434,6 +444,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity .15s ease;
+      will-change: opacity;
     }
 
     #openSidebar.show {
@@ -533,14 +544,14 @@
         z-index: 1300;
         margin-left: 0;
         transform: translateX(0);
-        transition: transform .25s ease, visibility 0s linear 0s;
+        transition: transform .25s ease;
+        will-change: transform;
       }
 
       #sidebar.collapsed {
         margin-left: 0;
         transform: translateX(-110%);
-        visibility: hidden;
-        transition: transform .25s ease, visibility 0s linear .25s;
+        pointer-events: none;
       }
 
       #sidebarBackdrop {
@@ -611,7 +622,7 @@
       align-items: center;
       justify-content: center;
       color: #4A5568;
-      transition: all .2s ease;
+      transition: background-color .2s ease, color .2s ease;
       position: relative;
       padding: 0;
     }
@@ -775,7 +786,7 @@
       z-index: 2000;
       opacity: 0;
       pointer-events: none;
-      transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity .25s cubic-bezier(0.16, 1, 0.3, 1), transform .25s cubic-bezier(0.16, 1, 0.3, 1);
       max-width: 90vw;
     }
 
@@ -875,7 +886,7 @@
       font-weight: 600;
       color: var(--blue);
       cursor: pointer;
-      transition: .15s;
+      transition: background-color .15s ease, border-color .15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -906,7 +917,7 @@
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s ease;
+      transition: background-color .15s ease, border-color .15s ease, color .15s ease;
       align-items: center;
       justify-content: center;
       gap: 6px;
@@ -1145,7 +1156,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="data/boundary-data.js" defer></script>
-  <script src="data/sls-meta.js" defer></script>
+  <script src="data/sls-meta.js" defer async></script>
   <script>
     /* Init peta + basemap lebih awal (tile mulai diunduh selagi data dimuat) */
     window.__wk = (function () {
