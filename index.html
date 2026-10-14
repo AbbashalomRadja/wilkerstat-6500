@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Peta interaktif wilayah kerja statistik (Wilkerstat) BPS Provinsi Kalimantan Utara: batas kabupaten/kota, kecamatan, desa/kelurahan, hingga SLS (RT/RW/Dusun)." />
+  <meta name="description"
+    content="Peta interaktif wilayah kerja statistik (Wilkerstat) BPS Provinsi Kalimantan Utara: batas kabupaten/kota, kecamatan, desa/kelurahan, hingga SLS (RT/RW/Dusun)." />
   <meta name="theme-color" content="#0B2545" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
   <link rel="preconnect" href="https://server.arcgisonline.com" crossorigin />
@@ -13,17 +14,162 @@
   <link rel="preload" as="style" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""
     onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" /></noscript>
+  <noscript>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  </noscript>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+  </noscript>
   <style>
     /* Critical Leaflet CSS inlined to prevent FOUC while leaflet.css loads async */
-    .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden;-ms-touch-action:none;touch-action:none;font-family:inherit;font-size:.75rem;line-height:1.5}.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:visible}.leaflet-zoom-animated{-webkit-transform-origin:0 0;transform-origin:0 0}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-control-attribution{background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution a{text-decoration:none}
-    @font-face { font-family: 'Inter Fallback'; src: local('Arial'); size-adjust: 107.4%; ascent-override: 90.2%; descent-override: 22.5%; line-gap-override: 0%; }
-    @font-face { font-family: 'JetBrains Mono Fallback'; src: local('Courier New'); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+    .leaflet-pane,
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow,
+    .leaflet-tile-container,
+    .leaflet-pane>svg,
+    .leaflet-pane>canvas,
+    .leaflet-zoom-box,
+    .leaflet-image-layer,
+    .leaflet-layer {
+      position: absolute;
+      left: 0;
+      top: 0
+    }
+
+    .leaflet-container {
+      overflow: hidden;
+      -ms-touch-action: none;
+      touch-action: none;
+      font-family: inherit;
+      font-size: .75rem;
+      line-height: 1.5
+    }
+
+    .leaflet-tile,
+    .leaflet-marker-icon,
+    .leaflet-marker-shadow {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none
+    }
+
+    .leaflet-tile {
+      filter: inherit;
+      visibility: hidden
+    }
+
+    .leaflet-tile-loaded {
+      visibility: visible
+    }
+
+    .leaflet-zoom-animated {
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0
+    }
+
+    .leaflet-control {
+      position: relative;
+      z-index: 800;
+      pointer-events: visiblePainted;
+      pointer-events: auto
+    }
+
+    .leaflet-top,
+    .leaflet-bottom {
+      position: absolute;
+      z-index: 1000;
+      pointer-events: none
+    }
+
+    .leaflet-top {
+      top: 0
+    }
+
+    .leaflet-right {
+      right: 0
+    }
+
+    .leaflet-bottom {
+      bottom: 0
+    }
+
+    .leaflet-left {
+      left: 0
+    }
+
+    .leaflet-top .leaflet-control {
+      margin-top: 10px
+    }
+
+    .leaflet-bottom .leaflet-control {
+      margin-bottom: 10px
+    }
+
+    .leaflet-left .leaflet-control {
+      margin-left: 10px
+    }
+
+    .leaflet-right .leaflet-control {
+      margin-right: 10px
+    }
+
+    .leaflet-bar {
+      box-shadow: 0 1px 5px rgba(0, 0, 0, .65);
+      border-radius: 4px
+    }
+
+    .leaflet-bar a {
+      background-color: #fff;
+      border-bottom: 1px solid #ccc;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      color: #000
+    }
+
+    .leaflet-bar a:hover {
+      background-color: #f4f4f4
+    }
+
+    .leaflet-control-attribution {
+      background: rgba(255, 255, 255, .8);
+      margin: 0
+    }
+
+    .leaflet-control-attribution a {
+      text-decoration: none
+    }
+
+    @font-face {
+      font-family: 'Inter Fallback';
+      src: local('Arial');
+      size-adjust: 107.4%;
+      ascent-override: 90.2%;
+      descent-override: 22.5%;
+      line-gap-override: 0%;
+    }
+
+    @font-face {
+      font-family: 'JetBrains Mono Fallback';
+      src: local('Courier New');
+      size-adjust: 100%;
+      ascent-override: 102%;
+      descent-override: 30%;
+      line-gap-override: 0%;
+    }
+
     :root {
       --navy: #0B2545;
       --navy-2: #123566;
@@ -515,13 +661,18 @@
       text-align: center;
       line-height: 1.25;
     }
-    .wilayah-label::before { display: none; }
+
+    .wilayah-label::before {
+      display: none;
+    }
+
     .lbl-nama {
       font-size: 10.5px;
       font-weight: 700;
       color: var(--ink);
       white-space: nowrap;
     }
+
     .lbl-kode {
       font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
       font-size: 9px;
@@ -583,7 +734,9 @@
       box-shadow: 0 1px 5px rgba(0, 0, 0, .4) !important;
     }
 
-    .leaflet-control-attribution a { color: #075985 !important; }
+    .leaflet-control-attribution a {
+      color: #075985 !important;
+    }
 
     /* ---------- Zoom Level Indicator ---------- */
     .zoom-indicator-control {
@@ -921,11 +1074,13 @@
       justify-content: center;
       gap: 6px;
     }
+
     #resetFilterBtn:hover {
       background: #FED7D7;
       border-color: #C53030;
       color: #C53030;
     }
+
     #resetFilterBtn.show {
       display: flex;
     }
@@ -982,7 +1137,11 @@
             </select>
           </div>
           <button id="resetFilterBtn" aria-label="Reset semua filter">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
             Reset Semua Filter
           </button>
         </div>
@@ -993,25 +1152,29 @@
             <span class="swatch" style="background:var(--kab)"></span>
             <span class="lname">Kabupaten/Kota</span>
             <span class="lcount" id="cnt-kabkot">-</span>
-            <label class="switch"><input type="checkbox" id="toggleKabkot" aria-label="Tampilkan layer Kabupaten/Kota" checked><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleKabkot" aria-label="Tampilkan layer Kabupaten/Kota"
+                checked><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:var(--kec)"></span>
             <span class="lname">Kecamatan</span>
             <span class="lcount" id="cnt-kec">-</span>
-            <label class="switch"><input type="checkbox" id="toggleKec" aria-label="Tampilkan layer Kecamatan" checked><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleKec" aria-label="Tampilkan layer Kecamatan"
+                checked><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:var(--desa-line)"></span>
             <span class="lname">Desa/Kelurahan</span>
             <span class="lcount" id="cnt-desa">-</span>
-            <label class="switch"><input type="checkbox" id="toggleDesa" aria-label="Tampilkan layer Desa/Kelurahan" checked><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleDesa" aria-label="Tampilkan layer Desa/Kelurahan"
+                checked><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:var(--sls)"></span>
             <span class="lname">SLS (RT/RW/Dusun)</span>
             <span class="lcount" id="cnt-sls">-</span>
-            <label class="switch"><input type="checkbox" id="toggleSls" aria-label="Tampilkan layer SLS"><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleSls" aria-label="Tampilkan layer SLS"><span
+                class="slider"></span></label>
           </div>
         </div>
 
@@ -1020,22 +1183,26 @@
           <div class="layer-row">
             <span class="swatch" style="background:transparent;border:1px dashed var(--kab)"></span>
             <span class="lname">Label Kab/Kota</span>
-            <label class="switch"><input type="checkbox" id="toggleKabkotLabel" aria-label="Tampilkan label Kabupaten/Kota"><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleKabkotLabel"
+                aria-label="Tampilkan label Kabupaten/Kota"><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:transparent;border:1px dashed var(--kec)"></span>
             <span class="lname">Label Kecamatan</span>
-            <label class="switch"><input type="checkbox" id="toggleKecLabel" aria-label="Tampilkan label Kecamatan"><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleKecLabel"
+                aria-label="Tampilkan label Kecamatan"><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:transparent;border:1px dashed var(--desa-line)"></span>
             <span class="lname">Label Desa/Kelurahan</span>
-            <label class="switch"><input type="checkbox" id="toggleDesaLabel" aria-label="Tampilkan label Desa/Kelurahan"><span class="slider"></span></label>
+            <label class="switch"><input type="checkbox" id="toggleDesaLabel"
+                aria-label="Tampilkan label Desa/Kelurahan"><span class="slider"></span></label>
           </div>
           <div class="layer-row">
             <span class="swatch" style="background:transparent;border:1px dashed var(--sls)"></span>
             <span class="lname">Label SLS</span>
-            <label class="switch" title="Nama+kode SLS lumayan berat, aktifkan hanya saat perlu"><input type="checkbox" id="toggleSlsLabel" aria-label="Tampilkan label SLS"><span class="slider"></span></label>
+            <label class="switch" title="Nama+kode SLS lumayan berat, aktifkan hanya saat perlu"><input type="checkbox"
+                id="toggleSlsLabel" aria-label="Tampilkan label SLS"><span class="slider"></span></label>
           </div>
         </div>
 
@@ -1198,21 +1365,6 @@
         })
       };
       basemaps.sat.addTo(map);
-
-      /* GPS button sebagai Leaflet Control supaya ikut layout zoom control */
-      var GpsControl = L.Control.extend({
-        options: { position: 'bottomright' },
-        onAdd: function () {
-          var wrap = document.getElementById('gpsBtnWrap');
-          if (wrap) {
-            L.DomEvent.disableClickPropagation(wrap);
-            L.DomEvent.disableScrollPropagation(wrap);
-          }
-          return wrap || L.DomUtil.create('div');
-        }
-      });
-      new GpsControl().addTo(map);
-
       return { map: map, basemaps: basemaps };
     })();
   </script>
@@ -1477,13 +1629,13 @@
         var desaCount = desaData.features.filter(function (f) {
           var p = f.properties;
           return (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
-                 (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec);
+            (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec);
         }).length;
         var slsList = typeof slsMeta !== 'undefined' ? slsMeta : [];
         var slsCount = slsList.filter(function (p) {
           return (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
-                 (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
-                 (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
+            (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
+            (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
         }).length;
         document.getElementById('cnt-kabkot').textContent = activeFilter.kdkab ? 1 : kabkotData.features.length;
         document.getElementById('cnt-kec').textContent = kecCount;
@@ -1499,14 +1651,14 @@
         kecLayer.eachLayer(function (l) {
           var p = l.feature.properties;
           var show = (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
-                     (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec);
+            (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec);
           setFeatureVisible(l, 'kec', show);
         });
         desaLayer.eachLayer(function (l) {
           var p = l.feature.properties;
           var show = (!activeFilter.kdkab || p.kdkab === activeFilter.kdkab) &&
-                     (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
-                     (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
+            (!activeFilter.kdkec || p.kdkec === activeFilter.kdkec) &&
+            (!activeFilter.kddesa || p.kddesa === activeFilter.kddesa);
           setFeatureVisible(l, 'desa', show);
         });
         refreshSlsLayerMembership();
@@ -1924,48 +2076,32 @@
       var searchBox = document.getElementById('searchBox');
       var searchResults = document.getElementById('searchResults');
       var searchIndex = [];
-      var searchIndexReady = false;
       // Kaltara hanya punya satu Kota (Tarakan), sisanya Kabupaten.
       // Data sumber tidak menyimpan status "kabupaten/kota" atau "desa/kelurahan"
       // secara eksplisit, jadi status ditentukan dari nama kab/kota tersebut.
       function isKotaKab(nmkab) { return nmkab === 'TARAKAN'; }
 
-      // Bangun search index secara tertunda (idle callback) supaya tidak
-      // memblok main thread saat initial load — mengurangi TBT.
-      function buildSearchIndex() {
-        kabkotData.features.forEach(function (f) {
-          searchIndex.push({
-            level: 'kabkot',
-            subtype: isKotaKab(f.properties.nmkab) ? 'kota' : 'kabupaten',
-            props: f.properties,
-            name: f.properties.nmkab
-          });
+      kabkotData.features.forEach(function (f) {
+        searchIndex.push({
+          level: 'kabkot',
+          subtype: isKotaKab(f.properties.nmkab) ? 'kota' : 'kabupaten',
+          props: f.properties,
+          name: f.properties.nmkab
         });
-        kecamatanData.features.forEach(function (f) { searchIndex.push({ level: 'kec', props: f.properties, name: f.properties.nmkec }); });
-        desaData.features.forEach(function (f) {
-          searchIndex.push({
-            level: 'desa',
-            subtype: isKotaKab(f.properties.nmkab) ? 'kelurahan' : 'desa',
-            props: f.properties,
-            name: f.properties.nmdesa
-          });
+      });
+      kecamatanData.features.forEach(function (f) { searchIndex.push({ level: 'kec', props: f.properties, name: f.properties.nmkec }); });
+      desaData.features.forEach(function (f) {
+        searchIndex.push({
+          level: 'desa',
+          subtype: isKotaKab(f.properties.nmkab) ? 'kelurahan' : 'desa',
+          props: f.properties,
+          name: f.properties.nmdesa
         });
-        if (typeof slsMeta !== 'undefined') {
-          slsMeta.forEach(function (p) {
-            searchIndex.push({ level: 'sls', props: p, name: p.nmsls });
-          });
-        }
-        searchIndexReady = true;
-        // Update SLS count yang mungkin belum tersedia saat awal
-        if (typeof slsMeta !== 'undefined') {
-          document.getElementById('cnt-sls').textContent = slsMeta.length;
-        }
-      }
-      // Gunakan requestIdleCallback jika tersedia, fallback ke setTimeout
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(buildSearchIndex, { timeout: 2000 });
-      } else {
-        setTimeout(buildSearchIndex, 100);
+      });
+      if (typeof slsMeta !== 'undefined') {
+        slsMeta.forEach(function (p) {
+          searchIndex.push({ level: 'sls', props: p, name: p.nmsls });
+        });
       }
 
       // Kata kunci jenis wilayah -> filter berdasarkan tipe, bukan nama
@@ -1989,9 +2125,6 @@
         searchDebounceTimer = setTimeout(runSearch, 180);
       });
       function runSearch() {
-        // Kalau user mengetik sebelum idle callback sempat berjalan,
-        // bangun index sekarang (sinkron) supaya pencarian tetap jalan.
-        if (!searchIndexReady) buildSearchIndex();
         var qRaw = searchBox.value.trim();
         var q = qRaw.toUpperCase();
         if (q.length < 2) { searchResults.style.display = 'none'; searchResults.innerHTML = ''; return; }
