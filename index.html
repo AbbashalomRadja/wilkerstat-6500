@@ -760,6 +760,9 @@
       margin-right: 10px !important;
       display: flex;
       align-items: center;
+      justify-content: flex-end;
+      clear: both;
+      float: right;
     }
 
     #gpsBtn {
@@ -826,7 +829,7 @@
 
     #gpsTooltip {
       position: absolute;
-      right: 52px;
+      right: 42px;
       top: 50%;
       transform: translateY(-50%);
       background: rgba(11, 37, 69, .92);
@@ -840,6 +843,7 @@
       pointer-events: none;
       transition: opacity .15s ease;
       box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+      z-index: 1001;
     }
 
     .gps-btn-wrap:hover #gpsTooltip {
@@ -1328,6 +1332,20 @@
     window.__wk = (function () {
       var map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([3.35, 117.05], 8);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      /* GPS button sebagai Leaflet Control supaya ikut layout dinamis zoom control */
+      var GpsControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function () {
+          var wrap = document.getElementById('gpsBtnWrap');
+          if (wrap) {
+            L.DomEvent.disableClickPropagation(wrap);
+            L.DomEvent.disableScrollPropagation(wrap);
+          }
+          return wrap || L.DomUtil.create('div');
+        }
+      });
+      new GpsControl().addTo(map);
 
       /* Zoom Level Indicator */
       var ZoomIndicator = L.Control.extend({
@@ -2076,32 +2094,47 @@
       var searchBox = document.getElementById('searchBox');
       var searchResults = document.getElementById('searchResults');
       var searchIndex = [];
+      var searchIndexReady = false;
       // Kaltara hanya punya satu Kota (Tarakan), sisanya Kabupaten.
       // Data sumber tidak menyimpan status "kabupaten/kota" atau "desa/kelurahan"
       // secara eksplisit, jadi status ditentukan dari nama kab/kota tersebut.
       function isKotaKab(nmkab) { return nmkab === 'TARAKAN'; }
 
-      kabkotData.features.forEach(function (f) {
-        searchIndex.push({
-          level: 'kabkot',
-          subtype: isKotaKab(f.properties.nmkab) ? 'kota' : 'kabupaten',
-          props: f.properties,
-          name: f.properties.nmkab
+      // Bangun search index secara tertunda (idle callback) supaya tidak
+      // memblok main thread saat initial load — mengurangi TBT.
+      function buildSearchIndex() {
+        kabkotData.features.forEach(function (f) {
+          searchIndex.push({
+            level: 'kabkot',
+            subtype: isKotaKab(f.properties.nmkab) ? 'kota' : 'kabupaten',
+            props: f.properties,
+            name: f.properties.nmkab
+          });
         });
-      });
-      kecamatanData.features.forEach(function (f) { searchIndex.push({ level: 'kec', props: f.properties, name: f.properties.nmkec }); });
-      desaData.features.forEach(function (f) {
-        searchIndex.push({
-          level: 'desa',
-          subtype: isKotaKab(f.properties.nmkab) ? 'kelurahan' : 'desa',
-          props: f.properties,
-          name: f.properties.nmdesa
+        kecamatanData.features.forEach(function (f) { searchIndex.push({ level: 'kec', props: f.properties, name: f.properties.nmkec }); });
+        desaData.features.forEach(function (f) {
+          searchIndex.push({
+            level: 'desa',
+            subtype: isKotaKab(f.properties.nmkab) ? 'kelurahan' : 'desa',
+            props: f.properties,
+            name: f.properties.nmdesa
+          });
         });
-      });
-      if (typeof slsMeta !== 'undefined') {
-        slsMeta.forEach(function (p) {
-          searchIndex.push({ level: 'sls', props: p, name: p.nmsls });
-        });
+        if (typeof slsMeta !== 'undefined') {
+          slsMeta.forEach(function (p) {
+            searchIndex.push({ level: 'sls', props: p, name: p.nmsls });
+          });
+        }
+        searchIndexReady = true;
+        if (typeof slsMeta !== 'undefined') {
+          var slsCnt = document.getElementById('cnt-sls');
+          if (slsCnt) slsCnt.textContent = slsMeta.length;
+        }
+      }
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(buildSearchIndex, { timeout: 2000 });
+      } else {
+        setTimeout(buildSearchIndex, 100);
       }
 
       // Kata kunci jenis wilayah -> filter berdasarkan tipe, bukan nama
@@ -2125,6 +2158,7 @@
         searchDebounceTimer = setTimeout(runSearch, 180);
       });
       function runSearch() {
+        if (!searchIndexReady) buildSearchIndex();
         var qRaw = searchBox.value.trim();
         var q = qRaw.toUpperCase();
         if (q.length < 2) { searchResults.style.display = 'none'; searchResults.innerHTML = ''; return; }
