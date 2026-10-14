@@ -279,15 +279,25 @@
       overflow-y: auto;
       padding: 18px 22px 28px;
       min-height: 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(11, 37, 69, .18) transparent;
     }
 
     .scroll::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
+    }
+
+    .scroll::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     .scroll::-webkit-scrollbar-thumb {
-      background: #D6DCE4;
-      border-radius: 8px;
+      background: rgba(11, 37, 69, .15);
+      border-radius: 6px;
+    }
+
+    .scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(11, 37, 69, .32);
     }
 
     .block {
@@ -342,6 +352,18 @@
       border: 1px solid var(--line);
       display: none;
       background: #fff;
+      box-shadow: 0 4px 14px rgba(11, 37, 69, .08);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(11, 37, 69, .18) transparent;
+    }
+
+    #searchResults::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #searchResults::-webkit-scrollbar-thumb {
+      background: rgba(11, 37, 69, .15);
+      border-radius: 6px;
     }
 
     #searchResults div {
@@ -349,6 +371,7 @@
       font-size: 13px;
       cursor: pointer;
       border-bottom: 1px solid #EEF1F5;
+      transition: background-color .15s ease, padding-left .15s ease;
     }
 
     #searchResults div:last-child {
@@ -356,7 +379,8 @@
     }
 
     #searchResults div:hover {
-      background: var(--paper);
+      background: #F0F5FC;
+      padding-left: 15px;
     }
 
     #searchResults .nm {
@@ -579,18 +603,20 @@
       top: 14px;
       left: 14px;
       z-index: 1000;
-      background: #fff;
-      border: none;
+      background: rgba(255, 255, 255, .90);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .7);
       width: 42px;
       height: 42px;
       border-radius: 10px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 4px 16px rgba(11, 37, 69, .14);
       cursor: pointer;
       font-size: 18px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .15s ease;
-      will-change: opacity;
+      transition: opacity .15s ease, background .2s ease, transform .15s ease;
+      will-change: opacity, transform;
     }
 
     #openSidebar.show {
@@ -599,7 +625,8 @@
     }
 
     #openSidebar:hover {
-      background: #F6F7F9;
+      background: #ffffff;
+      transform: scale(1.05);
     }
 
     .leaflet-popup-content-wrapper {
@@ -727,11 +754,24 @@
       width: 30px !important;
       height: 30px !important;
       line-height: 30px !important;
+      background: rgba(255, 255, 255, .90) !important;
+      color: #334155 !important;
+      border-bottom: 1px solid rgba(0, 0, 0, .07) !important;
+      transition: background-color .15s ease, color .15s ease;
+    }
+
+    .leaflet-bar a:hover {
+      background: #ffffff !important;
+      color: var(--blue) !important;
     }
 
     .leaflet-control-zoom {
-      border-radius: 4px !important;
-      box-shadow: 0 1px 5px rgba(0, 0, 0, .4) !important;
+      border-radius: 6px !important;
+      border: 1px solid rgba(255, 255, 255, .7) !important;
+      box-shadow: 0 4px 12px rgba(11, 37, 69, .15) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
     }
 
     .leaflet-control-attribution a {
@@ -740,14 +780,17 @@
 
     /* ---------- Zoom Level Indicator ---------- */
     .zoom-indicator-control {
-      background: #ffffff;
-      border-radius: 4px;
-      box-shadow: 0 1px 5px rgba(0, 0, 0, .4);
+      background: rgba(255, 255, 255, .90);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(11, 37, 69, .15);
       padding: 4px 9px;
       font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
       font-size: 11px;
       font-weight: 600;
-      color: #4A5568;
+      color: #334155;
       letter-spacing: .02em;
       user-select: none;
       line-height: 1.4;
@@ -768,16 +811,18 @@
     #gpsBtn {
       width: 30px;
       height: 30px;
-      background: #ffffff;
-      border: none;
-      border-radius: 4px;
-      box-shadow: 0 1px 5px rgba(0, 0, 0, .4);
+      background: rgba(255, 255, 255, .90);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .7);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(11, 37, 69, .15);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #4A5568;
-      transition: background-color .2s ease, color .2s ease;
+      color: #334155;
+      transition: background-color .2s ease, color .2s ease, transform .15s ease;
       position: relative;
       padding: 0;
     }
@@ -788,8 +833,9 @@
     }
 
     #gpsBtn:hover {
-      background: #F4F4F4;
+      background: #ffffff;
       color: var(--blue);
+      transform: scale(1.05);
     }
 
     #gpsBtn.locating {
