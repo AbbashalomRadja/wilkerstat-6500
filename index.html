@@ -1939,11 +1939,17 @@
       var selDesa = document.getElementById('selDesa');
       var selSls = document.getElementById('selSls');
 
+      // Urut berdasarkan kode (bukan abjad). Kode berformat nol-di-depan & panjang tetap,
+      // jadi pembandingan string sudah sama dengan urutan angka.
+      function cmpKode(a, b) { return a < b ? -1 : (a > b ? 1 : 0); }
+      function kodeKey(p) { return (p.kdkab || '') + (p.kdkec || '') + (p.kddesa || '') + (p.kdsls || ''); }
+      function labelOpsi(kode, nama) { return kode + ' \u00B7 ' + nama; }
+
       kabkotData.features
-        .slice().sort(function (a, b) { return a.properties.nmkab.localeCompare(b.properties.nmkab); })
+        .slice().sort(function (a, b) { return cmpKode(a.properties.kdkab, b.properties.kdkab); })
         .forEach(function (f) {
           var o = document.createElement('option');
-          o.value = f.properties.kdkab; o.textContent = f.properties.nmkab;
+          o.value = f.properties.kdkab; o.textContent = labelOpsi(f.properties.kdkab, f.properties.nmkab);
           selKabkot.appendChild(o);
         });
 
@@ -1954,10 +1960,10 @@
         if (!kdkab) { selKec.disabled = true; return; }
         selKec.disabled = false;
         kecamatanData.features.filter(function (f) { return f.properties.kdkab === kdkab; })
-          .sort(function (a, b) { return a.properties.nmkec.localeCompare(b.properties.nmkec); })
+          .sort(function (a, b) { return cmpKode(a.properties.kdkec, b.properties.kdkec); })
           .forEach(function (f) {
             var o = document.createElement('option');
-            o.value = f.properties.kdkec; o.textContent = f.properties.nmkec;
+            o.value = f.properties.kdkec; o.textContent = labelOpsi(f.properties.kdkec, f.properties.nmkec);
             selKec.appendChild(o);
           });
       }
@@ -1966,10 +1972,10 @@
         if (!kdkec) { selDesa.disabled = true; return; }
         selDesa.disabled = false;
         desaData.features.filter(function (f) { return f.properties.kdkab === kdkab && f.properties.kdkec === kdkec; })
-          .sort(function (a, b) { return a.properties.nmdesa.localeCompare(b.properties.nmdesa); })
+          .sort(function (a, b) { return cmpKode(a.properties.kddesa, b.properties.kddesa); })
           .forEach(function (f) {
             var o = document.createElement('option');
-            o.value = f.properties.kddesa; o.textContent = f.properties.nmdesa;
+            o.value = f.properties.kddesa; o.textContent = labelOpsi(f.properties.kddesa, f.properties.nmdesa);
             selDesa.appendChild(o);
           });
       }
@@ -1979,10 +1985,10 @@
         selSls.disabled = false;
         (typeof slsMeta !== 'undefined' ? slsMeta : [])
           .filter(function (p) { return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa; })
-          .sort(function (a, b) { return a.nmsls.localeCompare(b.nmsls); })
+          .sort(function (a, b) { return cmpKode(a.kdsls, b.kdsls); })
           .forEach(function (p) {
             var o = document.createElement('option');
-            o.value = p.kdsls; o.textContent = p.nmsls;
+            o.value = p.kdsls; o.textContent = labelOpsi(p.kdsls, p.nmsls);
             selSls.appendChild(o);
           });
       }
@@ -2231,7 +2237,7 @@
         if (q.length < 2) { searchResults.style.display = 'none'; searchResults.innerHTML = ''; return; }
         var typeFilter = typeKeywords[qRaw.toLowerCase()];
         var matches = typeFilter
-          ? searchIndex.filter(typeFilter).sort(function (a, b) { return a.name.localeCompare(b.name); }).slice(0, 300)
+          ? searchIndex.filter(typeFilter).sort(function (a, b) { return cmpKode(kodeKey(a.props), kodeKey(b.props)); }).slice(0, 300)
           : searchIndex.filter(function (it) { return it.name.indexOf(q) !== -1; }).slice(0, 30);
         if (!matches.length) { searchResults.innerHTML = '<div style="padding:10px 12px;color:#5B6675;">Tidak ditemukan wilayah dengan nama tersebut.</div>'; searchResults.style.display = 'block'; return; }
         searchResults.innerHTML = matches.map(function (it, idx) {
