@@ -1207,6 +1207,12 @@
               <option value="">&mdash; Pilih desa dulu &mdash;</option>
             </select>
           </div>
+          <div class="field">
+            <label for="selSubsls">Sub-SLS</label>
+            <select id="selSubsls" disabled>
+              <option value="">&mdash; Pilih SLS dulu &mdash;</option>
+            </select>
+          </div>
           <button id="resetFilterBtn" aria-label="Reset semua filter">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
               stroke-linecap="round" stroke-linejoin="round">
@@ -1527,6 +1533,7 @@
         if (level !== 'kabkot') html += '<div class="row"><span>Kab/Kota</span><span>' + escapeHtml(p.nmkab) + '</span></div>';
         if (level === 'sls' || level === 'desa') html += '<div class="row"><span>Kecamatan</span><span>' + escapeHtml(p.nmkec) + '</span></div>';
         if (level === 'sls') html += '<div class="row"><span>Desa/Kelurahan</span><span>' + escapeHtml(p.nmdesa) + '</span></div>';
+        if (level === 'sls' && p.idsubsls) html += '<div class="row"><span>ID Sub-SLS</span><span>' + escapeHtml(p.idsubsls) + '</span></div>';
         html += '<div class="fullcode">' + escapeHtml(fullKode(p, level)) + '</div>';
         return html;
       }
@@ -1938,6 +1945,7 @@
       var selKec = document.getElementById('selKec');
       var selDesa = document.getElementById('selDesa');
       var selSls = document.getElementById('selSls');
+      var selSubsls = document.getElementById('selSubsls');
 
       // Urut berdasarkan kode (bukan abjad). Kode berformat nol-di-depan & panjang tetap,
       // jadi pembandingan string sudah sama dengan urutan angka.
@@ -1979,7 +1987,29 @@
             selDesa.appendChild(o);
           });
       }
+      function resetSubsls() {
+        selSubsls.innerHTML = '<option value="">&mdash; Pilih SLS dulu &mdash;</option>';
+        selSubsls.disabled = true;
+      }
+      // Sub-SLS = potongan (bagian) dari satu SLS. Daftarnya diambil dari slsMeta (field `subsls`),
+      // jadi tidak perlu mengunduh data geometri dulu. idsubsls = idsls + kdsubsls.
+      function populateSubslsOptions(kdkab, kdkec, kddesa, kdsls) {
+        resetSubsls();
+        if (!kdsls) return;
+        var row = (typeof slsMeta !== 'undefined' ? slsMeta : []).find(function (p) {
+          return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls;
+        });
+        if (!row || !row.subsls || !row.subsls.length) return;
+        selSubsls.innerHTML = '<option value="">&mdash; Semua sub-SLS &mdash;</option>';
+        selSubsls.disabled = false;
+        row.subsls.slice().sort(cmpKode).forEach(function (kd) {
+          var o = document.createElement('option');
+          o.value = kd; o.textContent = labelOpsi(kd, row.idsls + kd);
+          selSubsls.appendChild(o);
+        });
+      }
       function populateSlsOptions(kdkab, kdkec, kddesa) {
+        resetSubsls();
         selSls.innerHTML = '<option value="">&mdash; Semua SLS &mdash;</option>';
         if (!kddesa) { selSls.disabled = true; return; }
         selSls.disabled = false;
@@ -2059,7 +2089,7 @@
         selDesa.innerHTML = '<option value="">&mdash; Pilih kecamatan dulu &mdash;</option>';
         selDesa.disabled = true;
         selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>';
-        selSls.disabled = true;
+        selSls.disabled = true; resetSubsls();
 
         // Reset search box
         searchBox.value = '';
@@ -2098,7 +2128,7 @@
         selDesa.innerHTML = '<option value="">&mdash; Pilih kecamatan dulu &mdash;</option>';
         selDesa.disabled = true;
         selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>';
-        selSls.disabled = true;
+        selSls.disabled = true; resetSubsls();
 
         activeFilter.kdkab = kdkab || null;
         activeFilter.kdkec = null;
@@ -2115,7 +2145,7 @@
         var kdkab = selKabkot.value, kdkec = selKec.value;
         populateDesaOptions(kdkab, kdkec);
         selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>';
-        selSls.disabled = true;
+        selSls.disabled = true; resetSubsls();
 
         activeFilter.kdkec = kdkec || null;
         activeFilter.kddesa = null;
@@ -2148,19 +2178,36 @@
         if (l) zoomAndOpen(l, 'desa', l.feature.properties);
       });
 
-      selSls.addEventListener('change', function () {
+      // Buka SLS terpilih (semua bagiannya) -- dipakai saat SLS dipilih atau Sub-SLS dikembalikan ke "Semua".
+      function openSelectedSls() {
         var kdkab = selKabkot.value, kdkec = selKec.value, kddesa = selDesa.value, kdsls = selSls.value;
-        if (!kdsls) {
-          var l = layerByKode(desaLayer, function (p) { return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa; });
-          if (l) zoomAndOpen(l, 'desa', l.feature.properties);
-          return;
-        }
         var props = (typeof slsMeta !== 'undefined' ? slsMeta : []).find(function (p) {
           return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls;
         });
         findSlsLayerAndOpen(kdkab, kdkec, function (p) {
           return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls;
         }, props);
+      }
+
+      selSls.addEventListener('change', function () {
+        var kdkab = selKabkot.value, kdkec = selKec.value, kddesa = selDesa.value, kdsls = selSls.value;
+        populateSubslsOptions(kdkab, kdkec, kddesa, kdsls);
+        if (!kdsls) {
+          var l = layerByKode(desaLayer, function (p) { return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa; });
+          if (l) zoomAndOpen(l, 'desa', l.feature.properties);
+          return;
+        }
+        openSelectedSls();
+      });
+
+      // Pilih satu Sub-SLS -> zoom ke potongan itu saja. "Semua sub-SLS" -> kembali ke seluruh bagian SLS.
+      selSubsls.addEventListener('change', function () {
+        var kdkab = selKabkot.value, kdkec = selKec.value, kddesa = selDesa.value, kdsls = selSls.value, kdsub = selSubsls.value;
+        if (!kdsls) return;
+        if (!kdsub) { openSelectedSls(); return; }
+        findSlsLayerAndOpen(kdkab, kdkec, function (p) {
+          return p.kdkab === kdkab && p.kdkec === kdkec && p.kddesa === kddesa && p.kdsls === kdsls && p.kdsubsls === kdsub;
+        });
       });
 
       /* ---------------- Free-text Search ---------------- */
@@ -2254,7 +2301,7 @@
               selKabkot.value = p.kdkab;
               populateKecOptions(p.kdkab);
               selDesa.innerHTML = '<option value="">&mdash; Pilih kecamatan dulu &mdash;</option>'; selDesa.disabled = true;
-              selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>'; selSls.disabled = true;
+              selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>'; selSls.disabled = true; resetSubsls();
               activeFilter.kdkab = p.kdkab; activeFilter.kdkec = null; activeFilter.kddesa = null;
               applyFilterVisibility();
               var l = layerByKode(kabkotLayer, function (pp) { return pp.kdkab === p.kdkab; });
@@ -2264,7 +2311,7 @@
               populateKecOptions(p.kdkab);
               selKec.value = p.kdkec;
               populateDesaOptions(p.kdkab, p.kdkec);
-              selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>'; selSls.disabled = true;
+              selSls.innerHTML = '<option value="">&mdash; Pilih desa dulu &mdash;</option>'; selSls.disabled = true; resetSubsls();
               activeFilter.kdkab = p.kdkab; activeFilter.kdkec = p.kdkec; activeFilter.kddesa = null;
               applyFilterVisibility();
               var l = layerByKode(kecLayer, function (pp) { return pp.kdkab === p.kdkab && pp.kdkec === p.kdkec; });
@@ -2288,6 +2335,7 @@
               selDesa.value = p.kddesa;
               populateSlsOptions(p.kdkab, p.kdkec, p.kddesa);
               selSls.value = p.kdsls;
+              populateSubslsOptions(p.kdkab, p.kdkec, p.kddesa, p.kdsls);
               activeFilter.kdkab = p.kdkab; activeFilter.kdkec = p.kdkec; activeFilter.kddesa = p.kddesa;
               applyFilterVisibility();
               findSlsLayerAndOpen(p.kdkab, p.kdkec, function (pp) {
