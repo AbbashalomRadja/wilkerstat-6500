@@ -700,6 +700,14 @@
       white-space: nowrap;
     }
 
+    .lbl-idsub {
+      font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
     .lbl-kode {
       font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
       font-size: 9px;
@@ -1281,6 +1289,14 @@
             <label class="switch" title="Nama+kode SLS lumayan berat, aktifkan hanya saat perlu"><input type="checkbox"
                 id="toggleSlsLabel" aria-label="Tampilkan label SLS"><span class="slider"></span></label>
           </div>
+          <div class="layer-row">
+            <span class="swatch" style="background:transparent;border:1px dashed var(--sls)"></span>
+            <span class="lname">Label ID Sub-SLS</span>
+            <label class="switch"
+              title="Tampilkan idsubsls (16 digit) di tiap potongan SLS. Menggantikan Label SLS, karena satu poligon hanya bisa punya satu label"><input
+                type="checkbox" id="toggleSubslsLabel" aria-label="Tampilkan label ID Sub-SLS"><span
+                class="slider"></span></label>
+          </div>
         </div>
 
         <div class="block">
@@ -1616,6 +1632,9 @@
       var activeFilter = { kdkab: null, kdkec: null, kddesa: null };
 
       function labelText(p, level) {
+        if (level === 'subsls') {
+          return '<div class="lbl-idsub">' + escapeHtml(p.idsubsls || p.idsls || '') + '</div>';
+        }
         var nama = level === 'kabkot' ? p.nmkab : level === 'kec' ? p.nmkec : level === 'desa' ? p.nmdesa : p.nmsls;
         var kode = level === 'kabkot' ? p.kdkab : level === 'kec' ? p.kdkec : level === 'desa' ? p.kddesa : p.kdsls;
         return '<div class="lbl-nama">' + escapeHtml(nama) + '</div><div class="lbl-kode">' + escapeHtml(kode) + '</div>';
@@ -1644,13 +1663,13 @@
       // sudah aktif, kalau ada), tanpa perlu pilih dropdown sampai dalam.
       // Cuma dihitung ulang saat togglenya sendiri diubah atau filter berubah
       // (BUKAN tiap zoom/geser), supaya tetap stabil & ringan.
-      var labelEnabled = { kabkot: false, kec: false, desa: false, sls: false };
+      var labelEnabled = { kabkot: false, kec: false, desa: false, sls: false, subsls: false };
 
       // Ambang zoom minimum per level supaya label tidak dipaksa nongol untuk
       // ratusan wilayah sekaligus saat peta masih zoom jauh (mis. toggle layer
       // dipaksa aktif manual walau belum di-zoom). Nilainya selaras dengan
       // DESA_AUTO_ZOOM/SLS_AUTO_ZOOM di atas.
-      var LABEL_MIN_ZOOM = { kabkot: 5, kec: 8, desa: 11, sls: 13 };
+      var LABEL_MIN_ZOOM = { kabkot: 5, kec: 8, desa: 11, sls: 13, subsls: 13 };
 
       function refreshLabels() {
         clearLabelsOnLayer(kabkotLayer);
@@ -1680,6 +1699,7 @@
         if (labelEnabled.kec) kecLayer.eachLayer(function (l) { maybeLabel(l, 'kec'); });
         if (labelEnabled.desa) desaLayer.eachLayer(function (l) { maybeLabel(l, 'desa'); });
         if (labelEnabled.sls) slsLayer.eachLayer(function (sub) { sub.eachLayer(function (l) { maybeLabel(l, 'sls'); }); });
+        if (labelEnabled.subsls) slsLayer.eachLayer(function (sub) { sub.eachLayer(function (l) { maybeLabel(l, 'subsls'); }); });
       }
 
       // Label dihitung ulang juga saat user selesai geser/zoom peta (di-debounce
@@ -1688,7 +1708,7 @@
       // kalau tidak ada label yang ditampilkan sama sekali.
       var labelRefreshTimer = null;
       function scheduleLabelRefresh() {
-        var anyLabelOn = labelEnabled.kabkot || labelEnabled.kec || labelEnabled.desa || labelEnabled.sls;
+        var anyLabelOn = labelEnabled.kabkot || labelEnabled.kec || labelEnabled.desa || labelEnabled.sls || labelEnabled.subsls;
         if (!anyLabelOn) return;
         clearTimeout(labelRefreshTimer);
         labelRefreshTimer = setTimeout(refreshLabels, 150);
@@ -1697,8 +1717,15 @@
       function wireLabelToggle(toggleId, level) {
         document.getElementById(toggleId).addEventListener('change', function (e) {
           labelEnabled[level] = e.target.checked;
-          if (labelEnabled[level]) forceLayerOn(level); // nyalain label -> pastikan layer-nya juga tampil
-          if (level === 'sls' && labelEnabled.sls) {
+          var layerLevel = level === 'subsls' ? 'sls' : level; // label Sub-SLS menempel di poligon layer SLS
+          if (labelEnabled[level]) forceLayerOn(layerLevel); // nyalain label -> pastikan layer-nya juga tampil
+          // Satu poligon hanya bisa punya satu label: Label SLS dan Label Sub-SLS saling menggantikan.
+          if (e.target.checked && (level === 'sls' || level === 'subsls')) {
+            var other = level === 'sls' ? 'subsls' : 'sls';
+            labelEnabled[other] = false;
+            document.getElementById(other === 'sls' ? 'toggleSlsLabel' : 'toggleSubslsLabel').checked = false;
+          }
+          if (layerLevel === 'sls' && labelEnabled[level]) {
             // Pastikan data SLS kecamatan yang relevan sudah ke-fetch dulu.
             ensureSlsLoadedForCurrentView().then(function () { refreshSlsLayerMembership(); refreshLabels(); });
             return;
@@ -1710,6 +1737,7 @@
       wireLabelToggle('toggleKecLabel', 'kec');
       wireLabelToggle('toggleDesaLabel', 'desa');
       wireLabelToggle('toggleSlsLabel', 'sls');
+      wireLabelToggle('toggleSubslsLabel', 'subsls');
 
       // Update angka jumlah wilayah di panel "Layer Batas Wilayah" supaya ikut
       // menyempit sesuai filter yang aktif (contoh: pilih Kab Malinau -> jumlah
