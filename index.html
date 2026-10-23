@@ -2052,11 +2052,40 @@
         kabkotLayer.bringToFront();
       }
 
+      /* Fokus layer: saat memakai Telusuri Berjenjang / pencarian, HANYA layer level yang terakhir
+         dipilih yang tampil (Kab -> Kab saja, Kecamatan -> Kecamatan saja, dst; Sub-SLS ikut layer SLS).
+         Toggle tetap bisa diubah manual sesudahnya. */
+      function setLayerShown(level, shown) {
+        var ref = layerRefs[level];
+        if (!ref || !ref.layer) return;
+        var has = map.hasLayer(ref.layer);
+        if (shown && !has) ref.layer.addTo(map);
+        if (!shown && has) map.removeLayer(ref.layer);
+        document.getElementById(ref.toggleId).checked = shown;
+        if (level === 'desa') desaManualOverride = shown;
+        if (level === 'sls') slsManualOverride = shown;
+      }
+
+      function focusLayer(level) {
+        ['kabkot', 'kec', 'desa', 'sls'].forEach(function (lv) { setLayerShown(lv, lv === level); });
+        kabkotLayer.bringToFront();
+      }
+
+      // Kondisi awal: Kab & Kecamatan menyala, Desa & SLS mengikuti zoom otomatis.
+      function restoreDefaultLayers() {
+        setLayerShown('kabkot', true);
+        setLayerShown('kec', true);
+        desaManualOverride = null;
+        slsManualOverride = null;
+        applyDesaVisibility();
+        applySlsVisibility();
+      }
+
       // allLayers (opsional): dipakai saat satu wilayah punya beberapa bagian
       // terpisah (khususnya SLS) — bounds dihitung dari gabungan semuanya,
       // popup dibuka di bagian pertama.
       function zoomAndOpen(layer, level, props, allLayers) {
-        forceLayerOn(level);
+        focusLayer(level);
         var group = (allLayers && allLayers.length > 1) ? L.featureGroup(allLayers) : layer;
         map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: level === 'sls' ? 15 : (level === 'desa' ? 13 : (level === 'kec' ? 11 : 9)) });
         var infoPanel = document.getElementById('infoPanel');
@@ -2066,6 +2095,7 @@
       }
 
       function resetToFullView() {
+        restoreDefaultLayers();
         map.fitBounds(kabkotLayer.getBounds(), { padding: [30, 30] });
         var infoPanel = document.getElementById('infoPanel');
         infoPanel.classList.add('empty');
