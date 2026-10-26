@@ -2222,7 +2222,7 @@
         layers.forEach(function (l) {
           var gj = l.toGeoJSON();
           selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: '#FFFFFF', weight: 7, opacity: 0.9, fill: false, lineJoin: 'round', className: 'sel-halo' } }));
-          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: color, weight: 3.5, opacity: 1, fillColor: color, fillOpacity: 0.06, lineJoin: 'round', className: 'sel-line' } }));
+          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: color, weight: 3.5, opacity: 1, fill: false, lineJoin: 'round', className: 'sel-line' } }));
         });
         selectionHighlight.addTo(map);
         selectionHighlight.bringToFront();
