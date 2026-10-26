@@ -1547,13 +1547,6 @@
             maxNativeZoom: 17,
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
           }),
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            subdomains: ['a', 'b', 'c'],
-            minZoom: 15, // tile OSM opak: hanya tampil saat zoom dekat agar citra satelit tidak tertutup
-            maxZoom: 19,
-            className: 'osm-hybrid-overlay',
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-          }),
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
             maxNativeZoom: 17,
