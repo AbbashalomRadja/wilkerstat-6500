@@ -740,6 +740,64 @@
       50% { stroke-opacity: .55; fill-opacity: .08; }
     }
 
+    /* Kartu "SLS Anda sekarang" di panel GPS */
+    .gps-sls-card {
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #F3E8FF, #EDE4FF);
+      border: 1px solid rgba(147, 51, 234, .25);
+    }
+
+    .gps-sls-card[hidden] {
+      display: none;
+    }
+
+    .gps-sls-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #9333EA;
+    }
+
+    .gps-sls-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 2px;
+    }
+
+    .gps-sls-sub {
+      font-size: 11px;
+      color: #5B6675;
+    }
+
+    .gps-sls-code {
+      font-family: 'JetBrains Mono', 'JetBrains Mono Fallback', monospace;
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--ink);
+    }
+
+    .gps-sls-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      background: #9333EA;
+      color: #fff;
+      cursor: pointer;
+      transition: filter .15s;
+    }
+
+    .gps-sls-btn:hover {
+      filter: brightness(1.1);
+    }
+
     @media (max-width:760px) {
       #sidebar {
         position: fixed;
@@ -1365,6 +1423,13 @@
               <b id="gpsRegionText"
                 style="text-align:right;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">&mdash;</b>
             </div>
+            <div id="gpsSlsCard" class="gps-sls-card" hidden>
+              <div class="gps-sls-label">SLS Anda sekarang</div>
+              <div class="gps-sls-name" id="gpsSlsName">&mdash;</div>
+              <div class="gps-sls-sub" id="gpsSlsSub"></div>
+              <div class="gps-sls-code" id="gpsSlsCode"></div>
+              <button type="button" class="gps-sls-btn" id="gpsSlsBtn">Sorot SLS Ini</button>
+            </div>
             <button class="gps-btn-center" id="gpsCenterBtn" disabled>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -1607,6 +1672,8 @@
             var infoPanel = document.getElementById('infoPanel');
             infoPanel.classList.remove('empty');
             infoPanel.innerHTML = infoPanelHtml(feature.properties, level);
+            // Sorot juga wilayah yang diklik langsung di peta (sama seperti hasil pencarian)
+            showSelectionHighlight([layer], level);
           });
         };
       }
@@ -2634,8 +2701,36 @@
           gpsRegionText.textContent = '—';
           if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
           if (userCircle) { map.removeLayer(userCircle); userCircle = null; }
+          updateMySls(null);
         }
       }
+
+      /* --- "SLS Anda sekarang" (berdasarkan posisi GPS) --- */
+      var gpsSlsCard = document.getElementById('gpsSlsCard');
+      var mySlsRegion = null;
+      var mySlsKey = null;
+      function updateMySls(region) {
+        if (!region || region.level !== 'sls') {
+          mySlsRegion = null;
+          mySlsKey = null;
+          if (gpsSlsCard) gpsSlsCard.hidden = true;
+          return;
+        }
+        var p = region.props;
+        var key = fullKode(p, 'sls') + (p.idsubsls ? '|' + p.idsubsls : '');
+        if (mySlsKey && key !== mySlsKey) showToast('Anda masuk SLS: ' + p.nmsls, 'info', 3500);
+        mySlsRegion = region;
+        mySlsKey = key;
+        document.getElementById('gpsSlsName').textContent = p.nmsls;
+        document.getElementById('gpsSlsSub').textContent = p.nmdesa + ', ' + p.nmkec;
+        document.getElementById('gpsSlsCode').textContent = fullKode(p, 'sls');
+        gpsSlsCard.hidden = false;
+      }
+      document.getElementById('gpsSlsBtn').addEventListener('click', function () {
+        if (!mySlsRegion) return;
+        followUserOnUpdate = false; // jangan langsung ditarik balik oleh update GPS
+        zoomAndOpen(L.geoJSON(mySlsRegion.feature), 'sls', mySlsRegion.props);
+      });
 
       function onGpsSuccess(position) {
         var lat = position.coords.latitude;
@@ -2660,7 +2755,10 @@
           // Muat data SLS kecamatan user saat ini secara diam-diam, supaya fix GPS berikutnya
           // bisa mendeteksi sampai level SLS juga.
           var kecHere = findKecByCoords(lat, lng);
-          if (kecHere) loadSlsForKec(kecHere.properties.kdkab, kecHere.properties.kdkec);
+          if (kecHere) loadSlsForKec(kecHere.properties.kdkab, kecHere.properties.kdkec).then(function (g) {
+            // Data SLS baru selesai dimuat -> paksa lookup ulang di fix GPS berikutnya
+            if (g && (!lastRegionResult || lastRegionResult.level !== 'sls')) lastRegionLookupTime = 0;
+          });
         } else {
           region = lastRegionResult;
         }
@@ -2710,6 +2808,7 @@
         }
         gpsRegionText.textContent = regionText;
         gpsRegionText.title = regionText;
+        updateMySls(region);
 
         // Marker Custom DivIcon
         var markerHtml = '<div class="gps-radar-wrap"><div class="gps-radar-ring"></div><div class="gps-radar-core"></div></div>';
