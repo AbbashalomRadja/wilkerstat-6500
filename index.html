@@ -726,6 +726,20 @@
       display: none;
     }
 
+    /* Highlight wilayah terpilih (berdenyut halus agar mudah ditemukan) */
+    .sel-halo {
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, .9));
+    }
+
+    .sel-line {
+      animation: selPulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes selPulse {
+      0%, 100% { stroke-opacity: 1; fill-opacity: .22; }
+      50% { stroke-opacity: .55; fill-opacity: .08; }
+    }
+
     @media (max-width:760px) {
       #sidebar {
         position: fixed;
@@ -2135,13 +2149,37 @@
         applySlsVisibility();
       }
 
+      // Highlight wilayah terpilih: overlay terpisah (non-interaktif) berupa halo putih
+      // tebal + garis warna level + fill tipis, supaya tetap kontras di area padat/perkotaan.
+      var selectionHighlight = L.featureGroup();
+      function clearSelectionHighlight() {
+        selectionHighlight.clearLayers();
+        if (map.hasLayer(selectionHighlight)) map.removeLayer(selectionHighlight);
+      }
+      function showSelectionHighlight(layers, level) {
+        clearSelectionHighlight();
+        var color = (levelMeta[level] || levelMeta.sls).color;
+        layers.forEach(function (l) {
+          var gj = l.toGeoJSON();
+          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: '#FFFFFF', weight: 9, opacity: 0.95, fill: false, lineJoin: 'round', className: 'sel-halo' } }));
+          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: color, weight: 4, opacity: 1, fillColor: color, fillOpacity: 0.22, lineJoin: 'round', className: 'sel-line' } }));
+        });
+        selectionHighlight.addTo(map);
+        selectionHighlight.bringToFront();
+      }
+
       // allLayers (opsional): dipakai saat satu wilayah punya beberapa bagian
       // terpisah (khususnya SLS) — bounds dihitung dari gabungan semuanya,
       // popup dibuka di bagian pertama.
       function zoomAndOpen(layer, level, props, allLayers) {
         focusLayer(level);
-        var group = (allLayers && allLayers.length > 1) ? L.featureGroup(allLayers) : layer;
-        map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: level === 'sls' ? 15 : (level === 'desa' ? 13 : (level === 'kec' ? 11 : 9)) });
+        var parts = (allLayers && allLayers.length) ? allLayers : [layer];
+        var group = parts.length > 1 ? L.featureGroup(parts) : layer;
+        // Zoom adaptif: fitBounds menyesuaikan luas polygon; batas maksimum dinaikkan
+        // agar SLS kecil di perkotaan bisa ter-zoom dekat (sebelumnya mentok di 15).
+        var pad = window.innerWidth <= 760 ? [24, 24] : [60, 60];
+        map.fitBounds(group.getBounds(), { padding: pad, maxZoom: level === 'sls' ? 18 : (level === 'desa' ? 16 : (level === 'kec' ? 13 : 11)) });
+        showSelectionHighlight(parts, level);
         var infoPanel = document.getElementById('infoPanel');
         infoPanel.classList.remove('empty');
         infoPanel.innerHTML = infoPanelHtml(props, level);
@@ -2149,6 +2187,7 @@
       }
 
       function resetToFullView() {
+        clearSelectionHighlight();
         restoreDefaultLayers();
         map.fitBounds(kabkotLayer.getBounds(), { padding: [30, 30] });
         var infoPanel = document.getElementById('infoPanel');
