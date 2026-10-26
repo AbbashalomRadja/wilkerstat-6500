@@ -194,6 +194,8 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      width: 100%;
+      overflow: hidden;
       font-family: 'Inter', 'Inter Fallback', system-ui, sans-serif;
       color: var(--ink);
     }
@@ -202,6 +204,9 @@
       position: fixed;
       inset: 0;
       display: flex;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
     }
 
     /* ---------- Sidebar ---------- */
@@ -217,6 +222,8 @@
       transition: margin-left .25s ease;
       will-change: margin-left;
       contain: layout style;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     #sidebar.collapsed {
@@ -715,12 +722,13 @@
       white-space: nowrap;
     }
 
-    /* Overlay OSM di atas citra satelit (mode hybrid): jalan desa lebih lengkap & kontras.
-       Catatan: JANGAN pakai mix-blend-mode: multiply -- jalan OSM berwarna putih/kuning
-       sehingga justru hilang saat di-multiply dengan citra satelit. */
+    /* Overlay OSM di atas citra satelit (mode hybrid): jalan desa & nama jalan lengkap
+       Menggunakan mix-blend-mode: multiply agar daratan putih/pucat OSM transparan dan
+       menyatu dengan citra satelit, sementara garis jalan dan teks tetap tajam */
     .osm-hybrid-overlay {
-      opacity: 0.45;
-      filter: contrast(1.2) saturate(1.1);
+      opacity: 0.42;
+      filter: contrast(1.25) saturate(1.2);
+      mix-blend-mode: multiply;
     }
 
     #sidebarBackdrop {
@@ -797,8 +805,10 @@
         left: 0;
         top: 0;
         height: 100%;
+        width: 88vw;
+        max-width: 340px;
+        min-width: 0;
         box-shadow: var(--shadow);
-        max-width: 88vw;
         z-index: 1300;
         margin-left: 0;
         transform: translateX(0);
@@ -808,7 +818,7 @@
 
       #sidebar.collapsed {
         margin-left: 0;
-        transform: translateX(-110%);
+        transform: translateX(-105%);
         pointer-events: none;
       }
 
@@ -1248,7 +1258,7 @@
       <div class="brand">
         <button id="closeSidebar" aria-label="Tutup Sidebar">&times;</button>
         <p class="kode">WILKERSTAT 65 &bull; BPS</p>
-        <h1>Wilkerstat Kalimantan&nbsp;Utara</h1>
+        <h1>Wilkerstat Kalimantan Utara</h1>
         <p>Peta wilayah kerja statistik &mdash; kabupaten/kota, kecamatan, desa/kelurahan, hingga SLS (RT/RW/Dusun).</p>
       </div>
 
@@ -1546,6 +1556,12 @@
             maxZoom: 19,
             maxNativeZoom: 17,
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+          }),
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            subdomains: ['a', 'b', 'c'],
+            maxZoom: 19,
+            className: 'osm-hybrid-overlay',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
           }),
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
