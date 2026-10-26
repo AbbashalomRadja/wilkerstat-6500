@@ -719,8 +719,8 @@
        Catatan: JANGAN pakai mix-blend-mode: multiply -- jalan OSM berwarna putih/kuning
        sehingga justru hilang saat di-multiply dengan citra satelit. */
     .osm-hybrid-overlay {
-      opacity: 0.6;
-      filter: contrast(1.45) saturate(1.6) brightness(0.95);
+      opacity: 0.45;
+      filter: contrast(1.2) saturate(1.1);
     }
 
     #sidebarBackdrop {
@@ -1549,6 +1549,7 @@
           }),
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             subdomains: ['a', 'b', 'c'],
+            minZoom: 15, // tile OSM opak: hanya tampil saat zoom dekat agar citra satelit tidak tertutup
             maxZoom: 19,
             className: 'osm-hybrid-overlay',
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
