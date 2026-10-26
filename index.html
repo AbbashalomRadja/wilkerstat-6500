@@ -715,6 +715,13 @@
       white-space: nowrap;
     }
 
+    /* Overlay OSM di atas citra satelit (mode hybrid): jalan desa lebih lengkap & kontras */
+    .osm-hybrid-overlay {
+      opacity: 0.42;
+      filter: contrast(1.25) saturate(1.2);
+      mix-blend-mode: multiply;
+    }
+
     #sidebarBackdrop {
       display: none;
     }
@@ -1467,6 +1474,12 @@
             maxZoom: 19,
             maxNativeZoom: 17,
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+          }),
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            subdomains: ['a', 'b', 'c'],
+            maxZoom: 19,
+            className: 'osm-hybrid-overlay',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
           }),
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
