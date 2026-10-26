@@ -715,29 +715,22 @@
       white-space: nowrap;
     }
 
-    /* Overlay OSM di atas citra satelit (mode hybrid): jalan desa lebih lengkap & kontras */
+    /* Overlay OSM di atas citra satelit (mode hybrid): jalan desa lebih lengkap & kontras.
+       Catatan: JANGAN pakai mix-blend-mode: multiply -- jalan OSM berwarna putih/kuning
+       sehingga justru hilang saat di-multiply dengan citra satelit. */
     .osm-hybrid-overlay {
-      opacity: 0.42;
-      filter: contrast(1.25) saturate(1.2);
-      mix-blend-mode: multiply;
+      opacity: 0.6;
+      filter: contrast(1.45) saturate(1.6) brightness(0.95);
     }
 
     #sidebarBackdrop {
       display: none;
     }
 
-    /* Highlight wilayah terpilih (berdenyut halus agar mudah ditemukan) */
+    /* Highlight wilayah terpilih: hanya garis tepi tegas, isi hampir transparan
+       (tanpa animasi) supaya citra/jalan di dalam wilayah tetap terlihat jelas */
     .sel-halo {
-      filter: drop-shadow(0 0 6px rgba(255, 255, 255, .9));
-    }
-
-    .sel-line {
-      animation: selPulse 1.6s ease-in-out infinite;
-    }
-
-    @keyframes selPulse {
-      0%, 100% { stroke-opacity: 1; fill-opacity: .22; }
-      50% { stroke-opacity: .55; fill-opacity: .08; }
+      filter: drop-shadow(0 0 3px rgba(255, 255, 255, .8));
     }
 
     /* Kartu "SLS Anda sekarang" di panel GPS */
@@ -2228,8 +2221,8 @@
         var color = (levelMeta[level] || levelMeta.sls).color;
         layers.forEach(function (l) {
           var gj = l.toGeoJSON();
-          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: '#FFFFFF', weight: 9, opacity: 0.95, fill: false, lineJoin: 'round', className: 'sel-halo' } }));
-          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: color, weight: 4, opacity: 1, fillColor: color, fillOpacity: 0.22, lineJoin: 'round', className: 'sel-line' } }));
+          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: '#FFFFFF', weight: 7, opacity: 0.9, fill: false, lineJoin: 'round', className: 'sel-halo' } }));
+          selectionHighlight.addLayer(L.geoJSON(gj, { interactive: false, style: { color: color, weight: 3.5, opacity: 1, fillColor: color, fillOpacity: 0.06, lineJoin: 'round', className: 'sel-line' } }));
         });
         selectionHighlight.addTo(map);
         selectionHighlight.bringToFront();
